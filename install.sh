@@ -36,6 +36,7 @@ if [ ! -d ${TMPDIR}/${OTP_SRC_DIR} ]; then
   cd ${TMPDIR} && tar xvzf ${OTP_PKGNAME}
 fi
 
+
 cd ${TMPDIR}/${OTP_SRC_DIR} && ./configure --prefix ${OTP_INSTALL_PATH}
 
 if [ ! -e ${TMPDIR}/${OTP_SRC_DIR}/Makefile ]; then
@@ -47,8 +48,15 @@ make && make install
 
 PATH=$PATH:${OTP_INSTALL_PATH}/bin
 REBAR_URL=https://github.com/rebar/rebar
-cd ${TMPDIR} && $(git clone ${REBAR_URL}) && cd rebar && ./bootstrap
+cd ${TMPDIR} && git clone ${REBAR_URL} && cd rebar && ./bootstrap
 
 if [ -e "rebar" ]; then
   cp rebar ${PWD}/rebar
 fi
+
+rm -fR ${TMPDIR}/${OTP_SRC_DIR}
+
+echo "Done"
+echo "==================================================="
+echo "export PATH=$PATH:${OTP_INSTALL_PATH}/bin"
+echo "export OTP_HOME=${OTP_INSTALL_PATH}"
