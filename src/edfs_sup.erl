@@ -8,6 +8,9 @@
 -export([]).
 
 
+start_link( Args ) ->
+	supervisor:start_link( {local, ?MODULE}, ?MODULE, [] ).
+
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
@@ -29,7 +32,7 @@
 				   | temporary,
 	Modules :: [module()] | dynamic.
 %% ====================================================================
-init([]) ->
+init( _ ) ->
     AChild = {'edfs_service',{'edfs_service',start_link,[]},
 	      permanent,2000,worker,['edfs_service']},
     {ok,{{one_for_all,0,1}, [AChild]}}.

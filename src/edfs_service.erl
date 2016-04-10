@@ -5,8 +5,19 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([ ]).
+-export([ start_link/1, stop/0, stop/1,stop/2]).
 
+start_link( Args  ) ->
+	gen_server:start_link( {local, ?MODULE}, ?MODULE, Args, [] ).
+
+stop() ->
+	stop( ?MODULE ).
+
+stop( Pid ) ->
+		stop( Pid, normal ).
+
+stop( Pid, Reason ) ->
+		gen_server:call( Pid, {stop, Reason } ).
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
@@ -45,6 +56,9 @@ init([]) ->
 	Timeout :: non_neg_integer() | infinity,
 	Reason :: term().
 %% ====================================================================
+handle_call( {stop, Reason}, _From, State ) ->
+		{stop, Reason, ok, State };
+
 handle_call(Request, From, State) ->
     Reply = ok,
     {reply, Reply, State}.

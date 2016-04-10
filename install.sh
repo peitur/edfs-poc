@@ -9,7 +9,10 @@ PWD=$(pwd)
 
 TMPDIR=/tmp/src
 OTP_INSTALL_PATH=/opt/otp/${OTP_VERSION}
-if [ ${USER} != "root" ]; then
+if [ ${USER} == "root" ]; then
+  echo "Install path is ${OTP_INSTALL_PATH}"
+  echo "Temporary build path is ${TMPDIR}"
+else
   TMPDIR=$(pwd)/tmp
   OTP_INSTALL_PATH=$(pwd)/otp/${OTP_VERSION}
   echo "You are not root, install path is changed to ${OTP_INSTALL_PATH}"
