@@ -1,30 +1,39 @@
--module( edfs_service ).
+-module( edfsc_service ).
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+-include_lib("include/edfs.hrl").
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([ start_link/0, start_link/1, stop/0, stop/1,stop/2]).
+-export([start_link/0, start_link/1, start_link/2, stop/0, stop/1 ]).
 
-start_link( ) ->
-	start_link( [] ).
+start_link() ->
+  start_link( [] ).
 
-start_link( Args  ) ->
-	gen_server:start_link( {local, ?MODULE}, ?MODULE, Args, [] ).
+start_link( Options ) ->
+  start_link( ?DEFAULT_CONFIG_FILE, Options ).
 
-stop() ->
-	stop( ?MODULE ).
+start_link( Filename, Options ) ->
+  gen_server:start_link( {local, ?MODULE}, ?MODULE, [Filename, Options], [] ).
 
-stop( Pid ) ->
-		stop( Pid, normal ).
+stop( ) -> stop( normal ).
+stop( Reason ) -> gen_server:call( ?MODULE, {stop, Reason}).
 
-stop( Pid, Reason ) ->
-		gen_server:call( Pid, {stop, Reason } ).
+get_value( Key ) ->
+  get_value( Key, undefined ).
+
+get_value( Key, Default ) ->
+  case gen_server:call( ?MODULE, {get, value, Key } ) of
+    undefined -> Default;
+    {ok, Value} -> {ok, Value }
+  end.
+
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
--record(state, {}).
+-record(state, { configfile, values = [] }).
 
 %% init/1
 %% ====================================================================
@@ -38,8 +47,8 @@ stop( Pid, Reason ) ->
 	State :: term(),
 	Timeout :: non_neg_integer() | infinity.
 %% ====================================================================
-init([]) ->
-    {ok, #state{}}.
+init( [Filename, Options] ) ->
+    {ok, #state{ configfile = Filename }, 0}.
 
 
 %% handle_call/3
@@ -59,8 +68,12 @@ init([]) ->
 	Timeout :: non_neg_integer() | infinity,
 	Reason :: term().
 %% ====================================================================
+handle_call( {get, value, Key}, _From, #state{ values = ValueList} = State ) ->
+  Val = proplists:get_value( Key, ValueList ),
+  {reply, {ok, Val}, State };
+
 handle_call( {stop, Reason}, _From, State ) ->
-		{stop, Reason, ok, State };
+  {stop, Reason, ok, State};
 
 handle_call(Request, From, State) ->
     Reply = ok,
@@ -93,6 +106,13 @@ handle_cast(Msg, State) ->
 	NewState :: term(),
 	Timeout :: non_neg_integer() | infinity.
 %% ====================================================================
+handle_info( timeout, #state{ configfile = File} = State ) ->
+  case x_read_configfile( File ) of
+    {error, Reason} ->
+      {stop, {error, Reason}, State};
+    Data -> {noreply, State#state{ values = Data } }
+  end;
+
 handle_info(Info, State) ->
     {noreply, State}.
 
@@ -125,3 +145,17 @@ code_change(OldVsn, State, Extra) ->
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+x_read_configfile( Filename ) ->
+  case filelib:is_file( Filename ) of
+    true ->
+      case file:consult( Filename ) of
+        {ok, Data} -> Data;
+        {error, Reason} ->
+          error_logger:error_msg( "ERROR: Error loading ~p : ~p", [Filename, Reason] ),
+          {error, Reason}
+        end;
+    Other ->
+      error_logger:error_msg( "ERROR: Could not find file ~p", [Filename] ),
+      {error, nosuchfile}
+  end.

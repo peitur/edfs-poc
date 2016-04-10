@@ -5,7 +5,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([]).
+-export([start_link/1]).
 
 
 start_link( Args ) ->
@@ -32,10 +32,15 @@ start_link( Args ) ->
 				   | temporary,
 	Modules :: [module()] | dynamic.
 %% ====================================================================
-init( _ ) ->
-    AChild = {'edfs_service',{'edfs_service',start_link,[]},
+init( [] ) ->
+		ConfigService = {'edfsc_service',{'edfsc_service',start_link,[]},
+	      permanent,2000,worker,['edfsc_service']},
+
+    MainService = {'edfs_service',{'edfs_service',start_link,[]},
 	      permanent,2000,worker,['edfs_service']},
-    {ok,{{one_for_all,0,1}, [AChild]}}.
+
+		% ConfigService, MainService
+    {ok,{{one_for_all,0,1}, [ConfigService, MainService]} }.
 
 %% ====================================================================
 %% Internal functions
